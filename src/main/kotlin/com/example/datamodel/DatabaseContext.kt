@@ -1,11 +1,8 @@
 package com.example.datamodel
 
 import java.sql.Connection
-import kotlin.reflect.KClass
-import kotlin.reflect.KMutableProperty
-import kotlin.reflect.KType
+import kotlin.reflect.*
 import kotlin.reflect.full.*
-import kotlin.reflect.typeOf
 
 class DatabaseContext(
     val Book: BookDbModel,
@@ -14,14 +11,16 @@ class DatabaseContext(
 ) {
     companion object {
         inline fun <reified T : Any> getEntities(
-            connection: Connection): Array<T> {
-            val entities = getEntities(connection, typeOf<T>());
+            connection: Connection,
+            filter: Pair<KProperty<*>, Any>?): Array<T> {
+            val entities = getEntities(connection, typeOf<T>(), filter)
             return entities.map { it as T }.toTypedArray()
         }
 
         fun getEntities(
             connection: Connection,
-            entityType: KType): Array<Any> {
+            entityType: KType,
+            filter: Pair<KProperty<*>, Any>?): Array<Any> {
             val entityClass = entityType.classifier as KClass<*>
             val annotatedTableName =
                 entityClass.findAnnotation<TableName>()?.tableName
@@ -31,7 +30,26 @@ class DatabaseContext(
                     ?: throw Exception("Could not obtain table name")
             var result = mutableListOf<Any>()
             connection.createStatement().use {
-                val queryResult = it.executeQuery("SELECT * FROM $actualTableName")
+                val statement = StringBuilder()
+                statement.append("SELECT * FROM $actualTableName ")
+                if (filter != null) {
+                    val annotatedFilterColumnName =
+                        filter.first.findAnnotation<ColumnName>()?.columnName
+                    val actualFilterColumnName =
+                        annotatedFilterColumnName ?: filter.first.name
+                    val filterPropertyType =
+                        filter.first.returnType.withNullability(false)
+                    if (filterPropertyType == typeOf<Int>()) {
+                        statement.append("WHERE $actualFilterColumnName=${filter.second}")
+                    } else {
+                        if (filterPropertyType == typeOf<String>()) {
+                            statement.append("WHERE $actualFilterColumnName='${filter.second}'")
+                        } else {
+                            throw Exception("Unsupported filter property type")
+                        }
+                    }
+                }
+                val queryResult = it.executeQuery(statement.toString())
                 while (queryResult.next()) {
                     val entityInstance = entityClass.createInstance()
                     for (property in entityClass.declaredMemberProperties) {

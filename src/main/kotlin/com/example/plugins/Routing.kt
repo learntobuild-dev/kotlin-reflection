@@ -17,7 +17,8 @@ data class Book(
     val title: String,
     val isbn: String,
     val authors: Array<String>,
-    val category: Int)
+    val category: Int
+)
 
 @Serializable
 data class User(val name: String)
@@ -31,38 +32,36 @@ fun Application.configureRouting() {
             get {
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
-                val books = DatabaseContext.getEntities<BookDbModel>(connection)
+                val books = DatabaseContext.getEntities<BookDbModel>(connection, null)
                 call.respond(
                     books.map {
                         Book(
                             it.title,
                             it.isbn,
                             it.authors.split(",").toTypedArray(),
-                            it.category ?: -1)
-                    }.toTypedArray())
+                            it.category ?: -1
+                        )
+                    }.toTypedArray()
+                )
             }
             get("/{id}") {
                 val id = call.parameters["id"]?.toIntOrNull()
                 if (id == null) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid id")
                 } else {
-                    val result = mutableListOf<Book>()
                     val connection = Database.getConnection()
                     DatabaseContext.ensureCreated(connection)
-                    connection.use {
-                        it.createStatement().use { stmt ->
-                            val sql = "SELECT TITLE, ISBN, AUTHORS, CATEGORY FROM BOOK WHERE ID=${id}"
-                            val queryResult = stmt.executeQuery(sql)
-                            while (queryResult.next()) {
-                                val title = queryResult.getString("TITLE")
-                                val isbn = queryResult.getString("ISBN")
-                                val authors = queryResult.getString("AUTHORS")
-                                val category = queryResult.getInt("CATEGORY")
-                                result.add(Book(title, isbn, authors.split(",").toTypedArray(), category))
-                            }
-                        }
-                    }
-                    call.respond(result)
+                    val books = DatabaseContext.getEntities<BookDbModel>(connection, Pair(BookDbModel::id, id))
+                    call.respond(
+                        books.map {
+                            Book(
+                                it.title,
+                                it.isbn,
+                                it.authors.split(",").toTypedArray(),
+                                it.category ?: -1
+                            )
+                        }.toTypedArray()
+                    )
                 }
             }
             put("/{id}") {
@@ -99,14 +98,16 @@ fun Application.configureRouting() {
                         book.isbn,
                         book.authors.joinToString(","),
                         null,
-                        book.category))
+                        book.category
+                    )
+                )
             }
         }
         route("/user") {
             get {
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
-                val users = DatabaseContext.getEntities<UserDbModel>(connection)
+                val users = DatabaseContext.getEntities<UserDbModel>(connection, null)
                 call.respond(users.map { User(it.name) }.toTypedArray())
             }
             get("/{id}") {
@@ -114,19 +115,10 @@ fun Application.configureRouting() {
                 if (id == null) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid id")
                 } else {
-                    val result = mutableListOf<String>()
                     val connection = Database.getConnection()
                     DatabaseContext.ensureCreated(connection)
-                    connection.use {
-                        it.createStatement().use { stmt ->
-                            val sql = "SELECT NAME FROM USER WHERE ID=${id}"
-                            val queryResult = stmt.executeQuery(sql)
-                            while (queryResult.next()) {
-                                result.add(queryResult.getString("NAME"))
-                            }
-                        }
-                    }
-                    call.respond(result)
+                    val users = DatabaseContext.getEntities<UserDbModel>(connection, Pair(UserDbModel::id, id))
+                    call.respond(users.map { User(it.name) }.toTypedArray())
                 }
             }
             post {
@@ -138,10 +130,9 @@ fun Application.configureRouting() {
         }
         route("/category") {
             get {
-                val result = mutableListOf<String>()
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
-                val categories = DatabaseContext.getEntities<CategoryDbModel>(connection)
+                val categories = DatabaseContext.getEntities<CategoryDbModel>(connection, null)
                 call.respond(categories.map { Category(it.name) }.toTypedArray())
             }
             get("/{id}") {
@@ -149,19 +140,10 @@ fun Application.configureRouting() {
                 if (id == null) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid id")
                 } else {
-                    val result = mutableListOf<String>()
                     val connection = Database.getConnection()
                     DatabaseContext.ensureCreated(connection)
-                    connection.use {
-                        it.createStatement().use { stmt ->
-                            val sql = "SELECT NAME FROM CATEGORY WHERE ID=${id}"
-                            val queryResult = stmt.executeQuery(sql)
-                            while (queryResult.next()) {
-                                result.add(queryResult.getString("NAME"))
-                            }
-                        }
-                    }
-                    call.respond(result)
+                    val categories = DatabaseContext.getEntities<CategoryDbModel>(connection, Pair(CategoryDbModel::id, id))
+                    call.respond(categories.map { Category(it.name) }.toTypedArray())
                 }
             }
             post {
