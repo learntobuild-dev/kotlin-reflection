@@ -2,14 +2,12 @@ package com.example.plugins
 
 import com.example.datamodel.DatabaseContext
 import com.example.services.Database
-import com.example.services.Database.Companion.ensureCreated
 import io.ktor.http.*
-import io.ktor.server.routing.*
-import io.ktor.server.response.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
-import kotlin.reflect.typeOf
 
 @Serializable
 data class Book(val title: String, val isbn: String, val authors: Array<String>, val category: Int)
@@ -19,7 +17,7 @@ fun Application.configureRouting() {
         route("/book") {
             get {
                 val result = mutableListOf<Book>()
-                ensureCreated(typeOf<DatabaseContext>())
+                DatabaseContext.ensureCreated()
                 Database.getConnection().use {
                     it.createStatement().use { stmt ->
                         val sql = "SELECT TITLE, ISBN, AUTHORS, CATEGORY FROM BOOK"
@@ -41,7 +39,7 @@ fun Application.configureRouting() {
                     call.respond(HttpStatusCode.BadRequest, "Invalid id")
                 } else {
                     val result = mutableListOf<Book>()
-                    ensureCreated(typeOf<DatabaseContext>())
+                    DatabaseContext.ensureCreated()
                     Database.getConnection().use {
                         it.createStatement().use { stmt ->
                             val sql = "SELECT TITLE, ISBN, AUTHORS, CATEGORY FROM BOOK WHERE ID=${id}"
@@ -65,7 +63,7 @@ fun Application.configureRouting() {
                 if (bookId == null || operation == null || userId == null) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid bookId or userId")
                 } else {
-                    ensureCreated(typeOf<DatabaseContext>())
+                    DatabaseContext.ensureCreated()
                     Database.getConnection().use {
                         it.createStatement().use { stmt ->
                             if (operation == "rent") {
@@ -82,7 +80,7 @@ fun Application.configureRouting() {
             }
             post {
                 val book = call.receive<Book>()
-                ensureCreated(typeOf<DatabaseContext>())
+                DatabaseContext.ensureCreated()
                 Database.getConnection().use {
                     it.createStatement().use { stmt ->
                         val id = (Database.getBookCount() ?: 0) + 1
@@ -100,7 +98,7 @@ fun Application.configureRouting() {
         route("/user") {
             get {
                 val result = mutableListOf<String>()
-                ensureCreated(typeOf<DatabaseContext>())
+                DatabaseContext.ensureCreated()
                 Database.getConnection().use {
                     it.createStatement().use { stmt ->
                         val sql = "SELECT NAME FROM USER"
@@ -118,7 +116,7 @@ fun Application.configureRouting() {
                     call.respond(HttpStatusCode.BadRequest, "Invalid id")
                 } else {
                     val result = mutableListOf<String>()
-                    ensureCreated(typeOf<DatabaseContext>())
+                    DatabaseContext.ensureCreated()
                     Database.getConnection().use {
                         it.createStatement().use { stmt ->
                             val sql = "SELECT NAME FROM USER WHERE ID=${id}"
@@ -133,7 +131,7 @@ fun Application.configureRouting() {
             }
             post {
                 val name = call.receiveText()
-                ensureCreated(typeOf<DatabaseContext>())
+                DatabaseContext.ensureCreated()
                 Database.getConnection().use {
                     it.createStatement().use { stmt ->
                         val id = (Database.getUserCount() ?: 0) + 1
@@ -146,7 +144,7 @@ fun Application.configureRouting() {
         route("/category") {
             get {
                 val result = mutableListOf<String>()
-                ensureCreated(typeOf<DatabaseContext>())
+                DatabaseContext.ensureCreated()
                 Database.getConnection().use {
                     it.createStatement().use { stmt ->
                         val sql = "SELECT NAME FROM CATEGORY"
@@ -164,7 +162,7 @@ fun Application.configureRouting() {
                     call.respond(HttpStatusCode.BadRequest, "Invalid id")
                 } else {
                     val result = mutableListOf<String>()
-                    ensureCreated(typeOf<DatabaseContext>())
+                    DatabaseContext.ensureCreated()
                     Database.getConnection().use {
                         it.createStatement().use { stmt ->
                             val sql = "SELECT NAME FROM CATEGORY WHERE ID=${id}"
@@ -179,7 +177,7 @@ fun Application.configureRouting() {
             }
             post {
                 val name = call.receiveText()
-                ensureCreated(typeOf<DatabaseContext>())
+                DatabaseContext.ensureCreated()
                 Database.getConnection().use {
                     it.createStatement().use { stmt ->
                         val id = (Database.getCategoryCount() ?: 0) + 1
