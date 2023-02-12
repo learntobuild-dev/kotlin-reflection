@@ -1,6 +1,9 @@
 package com.example.plugins
 
+import com.example.datamodel.BookDbModel
+import com.example.datamodel.CategoryDbModel
 import com.example.datamodel.DatabaseContext
+import com.example.datamodel.UserDbModel
 import com.example.services.Database
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -85,18 +88,14 @@ fun Application.configureRouting() {
                 val book = call.receive<Book>()
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
-                connection.use {
-                    it.createStatement().use { stmt ->
-                        val id = (Database.getBookCount() ?: 0) + 1
-                        val sql =
-                            "INSERT INTO BOOK VALUES " +
-                                    "(${id}, '${book.title}', " +
-                                    "'${book.isbn}', " +
-                                    "'${book.authors.joinToString(",")}', " +
-                                    "${book.category})"
-                        stmt.execute(sql)
-                    }
-                }
+                DatabaseContext.addEntity(
+                    connection,
+                    BookDbModel(
+                        book.title,
+                        book.isbn,
+                        book.authors.joinToString(","),
+                        null,
+                        book.category))
             }
         }
         route("/user") {
@@ -139,13 +138,7 @@ fun Application.configureRouting() {
                 val name = call.receiveText()
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
-                connection.use {
-                    it.createStatement().use { stmt ->
-                        val id = (Database.getUserCount() ?: 0) + 1
-                        val sql = "INSERT INTO USER VALUES (${id}, '${name}')"
-                        stmt.execute(sql)
-                    }
-                }
+                DatabaseContext.addEntity(connection, UserDbModel(name))
             }
         }
         route("/category") {
@@ -188,13 +181,7 @@ fun Application.configureRouting() {
                 val name = call.receiveText()
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
-                connection.use {
-                    it.createStatement().use { stmt ->
-                        val id = (Database.getCategoryCount() ?: 0) + 1
-                        val sql = "INSERT INTO CATEGORY VALUES (${id}, '${name}')"
-                        stmt.execute(sql)
-                    }
-                }
+                DatabaseContext.addEntity(connection, CategoryDbModel(name))
             }
         }
     }

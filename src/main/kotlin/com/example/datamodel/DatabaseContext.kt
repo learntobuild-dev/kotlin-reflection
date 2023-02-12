@@ -15,7 +15,89 @@ class DatabaseContext(
     val User: UserDbModel
 ) {
     companion object {
-        fun ensureCreated(connection: Connection) {
+        inline fun <reified T : Any> addEntity(
+            connection: Connection,
+            value: T) {
+            val valueType = typeOf<T>()
+            addEntity(connection, value, valueType)
+        }
+
+        fun addEntity(
+            connection: Connection,
+            value: Any,
+            valueType: KType) {
+            val tableClass = valueType.classifier as KClass<*>
+            val annotatedTableName =
+                tableClass.findAnnotation<TableName>()?.tableName
+            val actualTableName =
+                annotatedTableName
+                    ?: tableClass.simpleName
+                    ?: throw Exception("Could not obtain table name")
+            val columnNames = mutableListOf<String>()
+            val columnValues = mutableListOf<String>()
+            for (property in tableClass.declaredMemberProperties) {
+                val annotatedColumName = property.findAnnotation<ColumnName>()?.columnName
+                val actualColumName = annotatedColumName ?: property.name
+                columnNames.add("'$actualColumName'")
+                if (property.hasAnnotation<PrimaryKey>()) {
+                    //TODO We assume that the primary key is of type Int
+                    if (property.returnType != typeOf<Int>()) {
+                        throw Exception("Unsupported primary key type")
+                    }
+                    val nextId = (getCount(connection, actualTableName) ?: 0) + 1
+                    columnValues.add(nextId.toString())
+                } else {
+                    val propertyValue = property.call(value)
+                    if (propertyValue == null) {
+                        if (property.returnType.isMarkedNullable) {
+                            columnValues.add("NULL")
+                        } else {
+                            throw Exception("NULL property value for NOT NULL column")
+                        }
+                    } else {
+                        val propertyType =
+                            if (property.returnType.isMarkedNullable)
+                                property.returnType.withNullability(false)
+                            else
+                                property.returnType
+                        //TODO We assume that toString will produce valid SQL value
+                        val value = propertyValue.toString()
+                        if (propertyType == typeOf<Int>()) {
+                            columnValues.add(value)
+                        } else {
+                            if (propertyType == typeOf<String>()) {
+                                columnValues.add("'$value'")
+                            } else {
+                                throw Exception("Unsupported property type")
+                            }
+                        }
+                    }
+                }
+            }
+            val sqlStatement =
+                "INSERT INTO $actualTableName " +
+                "(${columnNames.joinToString(",")}) " +
+                "VALUES (${columnValues.joinToString(",")})"
+            connection.createStatement().use {
+                it.execute(sqlStatement)
+            }
+        }
+
+        private fun getCount(
+            connection: Connection,
+            tableName: String): Int? {
+            connection.createStatement().use { stmt ->
+                val sql = "SELECT COUNT(*) FROM $tableName"
+                val queryResult = stmt.executeQuery(sql)
+                while (queryResult.next()) {
+                    return queryResult.getInt(1)
+                }
+            }
+            return null
+        }
+
+        fun ensureCreated(
+            connection: Connection) {
             val contextClass = DatabaseContext::class
             val tables = getTables(connection)
             for (property in contextClass.declaredMemberProperties) {
@@ -34,7 +116,8 @@ class DatabaseContext(
             }
         }
 
-        private fun getTables(connection: Connection): Array<String> {
+        private fun getTables(
+            connection: Connection): Array<String> {
             val stmt = connection.createStatement()
             val sql = "select name from sqlite_schema where type = 'table'"
             val queryResult = stmt.executeQuery(sql)
@@ -46,7 +129,8 @@ class DatabaseContext(
             return result.toTypedArray()
         }
 
-        private fun buildCreateTable(type: KType): String {
+        private fun buildCreateTable(
+            type: KType): String {
             val tableClass = type.classifier as KClass<*>
             val statement = StringBuilder()
             val annotatedTableName =
@@ -73,7 +157,8 @@ class DatabaseContext(
             return statement.toString()
         }
 
-        private fun toSQLTypeName(kotlinType: KType): String {
+        private fun toSQLTypeName(
+            kotlinType: KType): String {
             val actualType =
                 if (kotlinType.isMarkedNullable)
                     kotlinType.withNullability(false)

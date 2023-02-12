@@ -2,8 +2,7 @@ package com.example.datamodel
 
 @TableName("CATEGORY")
 class CategoryDbModel {
-    constructor(id: Int, name: String) {
-        this.id = id
+    constructor(name: String) {
         this.name = name
     }
 

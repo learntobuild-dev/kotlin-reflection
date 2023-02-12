@@ -3,13 +3,11 @@ package com.example.datamodel
 @TableName("BOOK")
 class BookDbModel {
     constructor(
-        id: Int,
         title: String,
         isbn: String,
         authors: String,
         renterId: Int?,
         category: Int?) {
-        this.id = id
         this.title = title
         this.isbn = isbn
         this.authors = authors
