@@ -1,8 +1,8 @@
 package com.example.datamodel
 
 @TableName("USER")
-class UserDbModel {
-    constructor(name: String) {
+class UserDbModel() {
+    constructor(name: String) : this() {
         this.name = name
     }
 

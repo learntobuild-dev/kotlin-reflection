@@ -2,11 +2,9 @@ package com.example.datamodel
 
 import java.sql.Connection
 import kotlin.reflect.KClass
+import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KType
-import kotlin.reflect.full.declaredMemberProperties
-import kotlin.reflect.full.findAnnotation
-import kotlin.reflect.full.hasAnnotation
-import kotlin.reflect.full.withNullability
+import kotlin.reflect.full.*
 import kotlin.reflect.typeOf
 
 class DatabaseContext(
@@ -15,6 +13,41 @@ class DatabaseContext(
     val User: UserDbModel
 ) {
     companion object {
+        inline fun <reified T : Any> getEntities(
+            connection: Connection): Array<T> {
+            val entities = getEntities(connection, typeOf<T>());
+            return entities.map { it as T }.toTypedArray()
+        }
+
+        fun getEntities(
+            connection: Connection,
+            entityType: KType): Array<Any> {
+            val entityClass = entityType.classifier as KClass<*>
+            val annotatedTableName =
+                entityClass.findAnnotation<TableName>()?.tableName
+            val actualTableName =
+                annotatedTableName
+                    ?: entityClass.simpleName
+                    ?: throw Exception("Could not obtain table name")
+            var result = mutableListOf<Any>()
+            connection.createStatement().use {
+                val queryResult = it.executeQuery("SELECT * FROM $actualTableName")
+                while (queryResult.next()) {
+                    val entityInstance = entityClass.createInstance()
+                    for (property in entityClass.declaredMemberProperties) {
+                        val annotatedColumName = property.findAnnotation<ColumnName>()?.columnName
+                        val actualColumnName = annotatedColumName ?: property.name
+                        if (property is KMutableProperty<*>) {
+                            val columnValue = queryResult.getObject(actualColumnName)
+                            property.setter.call(entityInstance, columnValue)
+                        }
+                    }
+                    result.add(entityInstance)
+                }
+            }
+            return result.toTypedArray()
+        }
+
         inline fun <reified T : Any> addEntity(
             connection: Connection,
             value: T) {

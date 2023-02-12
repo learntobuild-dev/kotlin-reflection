@@ -13,29 +13,33 @@ import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Book(val title: String, val isbn: String, val authors: Array<String>, val category: Int)
+data class Book(
+    val title: String,
+    val isbn: String,
+    val authors: Array<String>,
+    val category: Int)
+
+@Serializable
+data class User(val name: String)
+
+@Serializable
+data class Category(val name: String)
 
 fun Application.configureRouting() {
     routing {
         route("/book") {
             get {
-                val result = mutableListOf<Book>()
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
-                connection.use {
-                    it.createStatement().use { stmt ->
-                        val sql = "SELECT TITLE, ISBN, AUTHORS, CATEGORY FROM BOOK"
-                        val queryResult = stmt.executeQuery(sql)
-                        while (queryResult.next()) {
-                            val title = queryResult.getString("TITLE")
-                            val isbn = queryResult.getString("ISBN")
-                            val authors = queryResult.getString("AUTHORS")
-                            val category = queryResult.getInt("CATEGORY")
-                            result.add(Book(title, isbn, authors.split(",").toTypedArray(), category))
-                        }
-                    }
-                }
-                call.respond(result)
+                val books = DatabaseContext.getEntities<BookDbModel>(connection)
+                call.respond(
+                    books.map {
+                        Book(
+                            it.title,
+                            it.isbn,
+                            it.authors.split(",").toTypedArray(),
+                            it.category ?: -1)
+                    }.toTypedArray())
             }
             get("/{id}") {
                 val id = call.parameters["id"]?.toIntOrNull()
@@ -100,19 +104,10 @@ fun Application.configureRouting() {
         }
         route("/user") {
             get {
-                val result = mutableListOf<String>()
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
-                connection.use {
-                    it.createStatement().use { stmt ->
-                        val sql = "SELECT NAME FROM USER"
-                        val queryResult = stmt.executeQuery(sql)
-                        while (queryResult.next()) {
-                            result.add(queryResult.getString("NAME"))
-                        }
-                    }
-                }
-                call.respond(result)
+                val users = DatabaseContext.getEntities<UserDbModel>(connection)
+                call.respond(users.map { User(it.name) }.toTypedArray())
             }
             get("/{id}") {
                 val id = call.parameters["id"]?.toIntOrNull()
@@ -146,16 +141,8 @@ fun Application.configureRouting() {
                 val result = mutableListOf<String>()
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
-                connection.use {
-                    it.createStatement().use { stmt ->
-                        val sql = "SELECT NAME FROM CATEGORY"
-                        val queryResult = stmt.executeQuery(sql)
-                        while (queryResult.next()) {
-                            result.add(queryResult.getString("NAME"))
-                        }
-                    }
-                }
-                call.respond(result)
+                val categories = DatabaseContext.getEntities<CategoryDbModel>(connection)
+                call.respond(categories.map { Category(it.name) }.toTypedArray())
             }
             get("/{id}") {
                 val id = call.parameters["id"]?.toIntOrNull()
