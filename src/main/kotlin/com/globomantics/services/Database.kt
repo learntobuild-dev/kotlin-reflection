@@ -1,9 +1,5 @@
 package com.globomantics.services
 
-import com.globomantics.datamodel.ColumnName
-import com.globomantics.datamodel.DatabaseContext
-import com.globomantics.datamodel.PrimaryKey
-import com.globomantics.datamodel.TableName
 import java.sql.Connection
 import java.sql.DriverManager
 
