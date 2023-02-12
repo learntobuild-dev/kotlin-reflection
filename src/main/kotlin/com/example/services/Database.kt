@@ -7,8 +7,9 @@ import java.sql.DriverManager
 class Database {
     companion object {
         fun getUserCount(): Int? {
-            DatabaseContext.ensureCreated()
-            getConnection().use {
+            val connection = getConnection()
+            DatabaseContext.ensureCreated(connection)
+            connection.use {
                 it.createStatement().use { stmt ->
                     val sql = "SELECT COUNT(*) FROM USER"
                     val queryResult = stmt.executeQuery(sql)
@@ -21,8 +22,9 @@ class Database {
         }
 
         fun getCategoryCount(): Int? {
-            DatabaseContext.ensureCreated()
-            getConnection().use {
+            val connection = getConnection()
+            DatabaseContext.ensureCreated(connection)
+            connection.use {
                 it.createStatement().use { stmt ->
                     val sql = "SELECT COUNT(*) FROM CATEGORY"
                     val queryResult = stmt.executeQuery(sql)
@@ -35,8 +37,9 @@ class Database {
         }
 
         fun getBookCount(): Int? {
-            DatabaseContext.ensureCreated()
-            getConnection().use {
+            val connection = getConnection()
+            DatabaseContext.ensureCreated(connection)
+            connection.use {
                 it.createStatement().use { stmt ->
                     val sql = "SELECT COUNT(*) FROM BOOK"
                     val queryResult = stmt.executeQuery(sql)

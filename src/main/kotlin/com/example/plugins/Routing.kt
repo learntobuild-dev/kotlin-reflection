@@ -17,8 +17,9 @@ fun Application.configureRouting() {
         route("/book") {
             get {
                 val result = mutableListOf<Book>()
-                DatabaseContext.ensureCreated()
-                Database.getConnection().use {
+                val connection = Database.getConnection()
+                DatabaseContext.ensureCreated(connection)
+                connection.use {
                     it.createStatement().use { stmt ->
                         val sql = "SELECT TITLE, ISBN, AUTHORS, CATEGORY FROM BOOK"
                         val queryResult = stmt.executeQuery(sql)
@@ -39,8 +40,9 @@ fun Application.configureRouting() {
                     call.respond(HttpStatusCode.BadRequest, "Invalid id")
                 } else {
                     val result = mutableListOf<Book>()
-                    DatabaseContext.ensureCreated()
-                    Database.getConnection().use {
+                    val connection = Database.getConnection()
+                    DatabaseContext.ensureCreated(connection)
+                    connection.use {
                         it.createStatement().use { stmt ->
                             val sql = "SELECT TITLE, ISBN, AUTHORS, CATEGORY FROM BOOK WHERE ID=${id}"
                             val queryResult = stmt.executeQuery(sql)
@@ -63,8 +65,9 @@ fun Application.configureRouting() {
                 if (bookId == null || operation == null || userId == null) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid bookId or userId")
                 } else {
-                    DatabaseContext.ensureCreated()
-                    Database.getConnection().use {
+                    val connection = Database.getConnection()
+                    DatabaseContext.ensureCreated(connection)
+                    connection.use {
                         it.createStatement().use { stmt ->
                             if (operation == "rent") {
                                 val sql = "UPDATE BOOK SET RENTER_ID=${userId} WHERE ID=${bookId}"
@@ -80,8 +83,9 @@ fun Application.configureRouting() {
             }
             post {
                 val book = call.receive<Book>()
-                DatabaseContext.ensureCreated()
-                Database.getConnection().use {
+                val connection = Database.getConnection()
+                DatabaseContext.ensureCreated(connection)
+                connection.use {
                     it.createStatement().use { stmt ->
                         val id = (Database.getBookCount() ?: 0) + 1
                         val sql =
@@ -98,8 +102,9 @@ fun Application.configureRouting() {
         route("/user") {
             get {
                 val result = mutableListOf<String>()
-                DatabaseContext.ensureCreated()
-                Database.getConnection().use {
+                val connection = Database.getConnection()
+                DatabaseContext.ensureCreated(connection)
+                connection.use {
                     it.createStatement().use { stmt ->
                         val sql = "SELECT NAME FROM USER"
                         val queryResult = stmt.executeQuery(sql)
@@ -116,8 +121,9 @@ fun Application.configureRouting() {
                     call.respond(HttpStatusCode.BadRequest, "Invalid id")
                 } else {
                     val result = mutableListOf<String>()
-                    DatabaseContext.ensureCreated()
-                    Database.getConnection().use {
+                    val connection = Database.getConnection()
+                    DatabaseContext.ensureCreated(connection)
+                    connection.use {
                         it.createStatement().use { stmt ->
                             val sql = "SELECT NAME FROM USER WHERE ID=${id}"
                             val queryResult = stmt.executeQuery(sql)
@@ -131,8 +137,9 @@ fun Application.configureRouting() {
             }
             post {
                 val name = call.receiveText()
-                DatabaseContext.ensureCreated()
-                Database.getConnection().use {
+                val connection = Database.getConnection()
+                DatabaseContext.ensureCreated(connection)
+                connection.use {
                     it.createStatement().use { stmt ->
                         val id = (Database.getUserCount() ?: 0) + 1
                         val sql = "INSERT INTO USER VALUES (${id}, '${name}')"
@@ -144,8 +151,9 @@ fun Application.configureRouting() {
         route("/category") {
             get {
                 val result = mutableListOf<String>()
-                DatabaseContext.ensureCreated()
-                Database.getConnection().use {
+                val connection = Database.getConnection()
+                DatabaseContext.ensureCreated(connection)
+                connection.use {
                     it.createStatement().use { stmt ->
                         val sql = "SELECT NAME FROM CATEGORY"
                         val queryResult = stmt.executeQuery(sql)
@@ -162,8 +170,9 @@ fun Application.configureRouting() {
                     call.respond(HttpStatusCode.BadRequest, "Invalid id")
                 } else {
                     val result = mutableListOf<String>()
-                    DatabaseContext.ensureCreated()
-                    Database.getConnection().use {
+                    val connection = Database.getConnection()
+                    DatabaseContext.ensureCreated(connection)
+                    connection.use {
                         it.createStatement().use { stmt ->
                             val sql = "SELECT NAME FROM CATEGORY WHERE ID=${id}"
                             val queryResult = stmt.executeQuery(sql)
@@ -177,8 +186,9 @@ fun Application.configureRouting() {
             }
             post {
                 val name = call.receiveText()
-                DatabaseContext.ensureCreated()
-                Database.getConnection().use {
+                val connection = Database.getConnection()
+                DatabaseContext.ensureCreated(connection)
+                connection.use {
                     it.createStatement().use { stmt ->
                         val id = (Database.getCategoryCount() ?: 0) + 1
                         val sql = "INSERT INTO CATEGORY VALUES (${id}, '${name}')"

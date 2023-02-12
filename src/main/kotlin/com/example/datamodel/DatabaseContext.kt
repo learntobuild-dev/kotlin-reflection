@@ -1,6 +1,5 @@
 package com.example.datamodel
 
-import com.example.services.Database
 import java.sql.Connection
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
@@ -16,9 +15,8 @@ class DatabaseContext(
     val User: UserDbModel
 ) {
     companion object {
-        fun ensureCreated() {
+        fun ensureCreated(connection: Connection) {
             val contextClass = DatabaseContext::class
-            val connection = Database.getConnection()
             val tables = getTables(connection)
             for (property in contextClass.declaredMemberProperties) {
                 val propertyType = property.returnType
@@ -36,8 +34,8 @@ class DatabaseContext(
             }
         }
 
-        private fun getTables(conn: Connection): Array<String> {
-            val stmt = conn.createStatement()
+        private fun getTables(connection: Connection): Array<String> {
+            val stmt = connection.createStatement()
             val sql = "select name from sqlite_schema where type = 'table'"
             val queryResult = stmt.executeQuery(sql)
             val result: MutableList<String> = mutableListOf()
