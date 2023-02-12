@@ -1,13 +1,13 @@
 package com.globomantics.datamodel
 
 @TableName("BOOK")
-class BookDbModel {
+class BookDbModel() {
     constructor(
         title: String,
         isbn: String,
         authors: String,
         renterId: Int?,
-        category: Int?) {
+        category: Int?) : this() {
         this.title = title
         this.isbn = isbn
         this.authors = authors
