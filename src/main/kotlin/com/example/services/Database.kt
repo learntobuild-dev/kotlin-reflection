@@ -14,7 +14,7 @@ import kotlin.reflect.typeOf
 class Database {
     companion object {
         fun getUserCount(): Int? {
-            initialize()
+            ensureCreated(typeOf<DatabaseContext>())
             getConnection().use {
                 it.createStatement().use { stmt ->
                     val sql = "SELECT COUNT(*) FROM USER"
@@ -26,8 +26,9 @@ class Database {
             }
             return null
         }
+
         fun getCategoryCount(): Int? {
-            initialize()
+            ensureCreated(typeOf<DatabaseContext>())
             getConnection().use {
                 it.createStatement().use { stmt ->
                     val sql = "SELECT COUNT(*) FROM CATEGORY"
@@ -39,8 +40,9 @@ class Database {
             }
             return null
         }
+
         fun getBookCount(): Int? {
-            initialize()
+            ensureCreated(typeOf<DatabaseContext>())
             getConnection().use {
                 it.createStatement().use { stmt ->
                     val sql = "SELECT COUNT(*) FROM BOOK"
@@ -52,27 +54,27 @@ class Database {
             }
             return null
         }
-        fun initialize() {
+
+        fun ensureCreated(context: KType) {
+            val contextClass = context.classifier as KClass<*>
             val connection = getConnection()
-            connection.use { connection ->
-                val tables = getTables(connection)
-                if (!tables.contains("CATEGORY")) {
+            val tables = getTables(connection)
+            for (property in contextClass.declaredMemberProperties) {
+                val propertyType = property.returnType
+                val propertyClass = propertyType.classifier as KClass<*>
+                val tableName =
+                    propertyClass
+                        .findAnnotation<TableName>()
+                        ?.tableName
+                        ?: propertyClass.simpleName
+                if (!tables.contains(tableName)) {
                     connection.createStatement().use {
-                        it.execute(buildCreateTable(typeOf<CategoryDbModel>()))
-                    }
-                }
-                if (!tables.contains("USER")) {
-                    connection.createStatement().use {
-                        it.execute(buildCreateTable(typeOf<UserDbModel>()))
-                    }
-                }
-                if (!tables.contains("BOOK")) {
-                    connection.createStatement().use {
-                        it.execute(buildCreateTable(typeOf<BookDbModel>()))
+                        it.execute(buildCreateTable(propertyType))
                     }
                 }
             }
         }
+
         private fun getTables(conn: Connection): Array<String> {
             val stmt = conn.createStatement()
             val sql = "select name from sqlite_schema where type = 'table'"
@@ -84,6 +86,7 @@ class Database {
             stmt.close()
             return result.toTypedArray()
         }
+
         private fun buildCreateTable(type: KType): String {
             val tableClass = type.classifier as KClass<*>
             val statement = StringBuilder()
@@ -98,7 +101,7 @@ class Database {
             for (propertyIndex in properties.indices) {
                 val property = properties.elementAt(propertyIndex)
                 val annotatedColumName = property.findAnnotation<ColumnName>()?.columnName
-                val actualColumName = annotatedColumName?: property.name
+                val actualColumName = annotatedColumName ?: property.name
                 val sqlTypeName = toSQLTypeName(property.returnType)
                 val primaryKey = if (property.hasAnnotation<PrimaryKey>()) "PRIMARY KEY" else ""
                 val nullity = if (property.returnType.isMarkedNullable) "NULL" else "NOT NULL"
@@ -110,6 +113,7 @@ class Database {
             statement.append(")")
             return statement.toString()
         }
+
         private fun toSQLTypeName(kotlinType: KType): String {
             val actualType =
                 if (kotlinType.isMarkedNullable)
@@ -126,6 +130,7 @@ class Database {
                 }
             }
         }
+
         fun getConnection(): Connection {
             Class.forName("org.sqlite.JDBC")
             return DriverManager.getConnection("jdbc:sqlite:test1.db")
