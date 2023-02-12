@@ -1,7 +1,15 @@
 package com.example.services
 
+import com.example.datamodel.*
 import java.sql.Connection
 import java.sql.DriverManager
+import kotlin.reflect.KClass
+import kotlin.reflect.KType
+import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.hasAnnotation
+import kotlin.reflect.full.withNullability
+import kotlin.reflect.typeOf
 
 class Database {
     companion object {
@@ -49,13 +57,19 @@ class Database {
             connection.use { connection ->
                 val tables = getTables(connection)
                 if (!tables.contains("CATEGORY")) {
-                    createCategoryTable(connection)
+                    connection.createStatement().use {
+                        it.execute(buildCreateTable(typeOf<CategoryDbModel>()))
+                    }
                 }
                 if (!tables.contains("USER")) {
-                    createUserTable(connection)
+                    connection.createStatement().use {
+                        it.execute(buildCreateTable(typeOf<UserDbModel>()))
+                    }
                 }
                 if (!tables.contains("BOOK")) {
-                    createBookTable(connection)
+                    connection.createStatement().use {
+                        it.execute(buildCreateTable(typeOf<BookDbModel>()))
+                    }
                 }
             }
         }
@@ -70,36 +84,51 @@ class Database {
             stmt.close()
             return result.toTypedArray()
         }
-        private fun createCategoryTable(conn: Connection): Unit {
-            val stmt = conn.createStatement()
-            val sql = "CREATE TABLE CATEGORY " +
-                    "(ID INT PRIMARY KEY     NOT NULL," +
-                    " NAME           TEXT    NOT NULL)"
-            stmt.executeUpdate(sql)
-            stmt.close()
+        private fun buildCreateTable(type: KType): String {
+            val tableClass = type.classifier as KClass<*>
+            val statement = StringBuilder()
+            val annotatedTableName =
+                tableClass.findAnnotation<TableName>()?.tableName
+            val actualTable =
+                annotatedTableName
+                    ?: tableClass.simpleName
+                    ?: throw Exception("Could not obtain table name")
+            statement.append("CREATE TABLE $actualTable (")
+            val properties = tableClass.declaredMemberProperties
+            for (propertyIndex in properties.indices) {
+                val property = properties.elementAt(propertyIndex)
+                val annotatedColumName = property.findAnnotation<ColumnName>()?.columnName
+                val actualColumName = annotatedColumName?: property.name
+                val sqlTypeName = toSQLTypeName(property.returnType)
+                val primaryKey = if (property.hasAnnotation<PrimaryKey>()) "PRIMARY KEY" else ""
+                val nullity = if (property.returnType.isMarkedNullable) "NULL" else "NOT NULL"
+                statement.append("$actualColumName $sqlTypeName $primaryKey $nullity")
+                if (propertyIndex < properties.size - 1) {
+                    statement.append(", ")
+                }
+            }
+            statement.append(")")
+            return statement.toString()
         }
-        private fun createUserTable(conn: Connection): Unit {
-            val stmt = conn.createStatement()
-            val sql = "CREATE TABLE USER " +
-                    "(ID INT PRIMARY KEY     NOT NULL," +
-                    " NAME           TEXT    NOT NULL)"
-            stmt.executeUpdate(sql)
-            stmt.close()
-        }
-        private fun createBookTable(conn: Connection): Unit {
-            val stmt = conn.createStatement()
-            val sql = "CREATE TABLE BOOK " +
-                    "(ID INT PRIMARY KEY    NOT NULL," +
-                    " TITLE          TEXT   NOT NULL," +
-                    " ISBN           TEXT   NOT NULL," +
-                    " AUTHORS        TEXT   NOT NULL," +
-                    " CATEGORY       INT   NULL)"
-            stmt.executeUpdate(sql)
-            stmt.close()
+        private fun toSQLTypeName(kotlinType: KType): String {
+            val actualType =
+                if (kotlinType.isMarkedNullable)
+                    kotlinType.withNullability(false)
+                else
+                    kotlinType
+            if (actualType == typeOf<Int>()) {
+                return "INT"
+            } else {
+                if (actualType == typeOf<String>()) {
+                    return "TEXT"
+                } else {
+                    throw Exception("Unsupported type $actualType")
+                }
+            }
         }
         fun getConnection(): Connection {
             Class.forName("org.sqlite.JDBC")
-            return DriverManager.getConnection("jdbc:sqlite:test.db")
+            return DriverManager.getConnection("jdbc:sqlite:test1.db")
         }
     }
 }
