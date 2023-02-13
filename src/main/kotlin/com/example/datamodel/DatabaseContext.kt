@@ -10,6 +10,63 @@ class DatabaseContext(
     val User: UserDbModel
 ) {
     companion object {
+        inline fun <reified T : Any> updateEntities(
+            connection: Connection,
+            filter: Pair<KProperty<*>, Any>,
+            crossinline update: (T) -> T) {
+            updateEntities(connection, typeOf<T>(), filter) { update(it as T) }
+        }
+
+        fun updateEntities(
+            connection: Connection,
+            entityType: KType,
+            filter: Pair<KProperty<*>, Any>,
+            update: (Any) -> Any) {
+            val entityClass = entityType.classifier as KClass<*>
+            val annotatedTableName =
+                entityClass.findAnnotation<TableName>()?.tableName
+            val actualTableName =
+                annotatedTableName
+                    ?: entityClass.simpleName
+                    ?: throw Exception("Could not obtain table name")
+            val entities = getEntities(connection, entityType, filter)
+            for (entity in entities) {
+                val changes = mutableListOf<String>()
+                val updatedEntity = update(entity)
+                for (property in entityClass.declaredMemberProperties) {
+                    if (property.hasAnnotation<PrimaryKey>()) {
+                        continue
+                    }
+                    val oldValue = property.call(entity)
+                    val newValue = property.call(updatedEntity)
+                    if (oldValue != newValue) {
+                        val annotatedColumnName =
+                            property.findAnnotation<ColumnName>()?.columnName
+                        val actualColumnName =
+                            annotatedColumnName ?: property.name
+                        val propertyType =
+                            property.returnType.withNullability(false)
+                        if (propertyType == typeOf<Int>()) {
+                            changes.add("$actualColumnName=$newValue")
+                        } else {
+                            if (propertyType == typeOf<String>()) {
+                                changes.add("$actualColumnName='$newValue'")
+                            } else {
+                                throw Exception("Unsupported property type")
+                            }
+                        }
+                    }
+                }
+                if (changes.size > 0) {
+                    val statement = StringBuilder()
+                    statement.append("UPDATE $actualTableName SET ")
+                    statement.append(changes.joinToString(","))
+                    statement.append(" ${buildFilter(filter)}")
+                    connection.createStatement().use { it.execute(statement.toString()) }
+                }
+            }
+        }
+
         inline fun <reified T : Any> getEntities(
             connection: Connection,
             filter: Pair<KProperty<*>, Any>?): Array<T> {
@@ -28,26 +85,12 @@ class DatabaseContext(
                 annotatedTableName
                     ?: entityClass.simpleName
                     ?: throw Exception("Could not obtain table name")
-            var result = mutableListOf<Any>()
+            val result = mutableListOf<Any>()
             connection.createStatement().use {
                 val statement = StringBuilder()
                 statement.append("SELECT * FROM $actualTableName ")
                 if (filter != null) {
-                    val annotatedFilterColumnName =
-                        filter.first.findAnnotation<ColumnName>()?.columnName
-                    val actualFilterColumnName =
-                        annotatedFilterColumnName ?: filter.first.name
-                    val filterPropertyType =
-                        filter.first.returnType.withNullability(false)
-                    if (filterPropertyType == typeOf<Int>()) {
-                        statement.append("WHERE $actualFilterColumnName=${filter.second}")
-                    } else {
-                        if (filterPropertyType == typeOf<String>()) {
-                            statement.append("WHERE $actualFilterColumnName='${filter.second}'")
-                        } else {
-                            throw Exception("Unsupported filter property type")
-                        }
-                    }
+                    statement.append(buildFilter(filter))
                 }
                 val queryResult = it.executeQuery(statement.toString())
                 while (queryResult.next()) {
@@ -64,6 +107,25 @@ class DatabaseContext(
                 }
             }
             return result.toTypedArray()
+        }
+
+        private fun buildFilter(
+            filter: Pair<KProperty<*>, Any>): String {
+            val annotatedFilterColumnName =
+                filter.first.findAnnotation<ColumnName>()?.columnName
+            val actualFilterColumnName =
+                annotatedFilterColumnName ?: filter.first.name
+            val filterPropertyType =
+                filter.first.returnType.withNullability(false)
+            if (filterPropertyType == typeOf<Int>()) {
+                return "WHERE $actualFilterColumnName=${filter.second}"
+            } else {
+                if (filterPropertyType == typeOf<String>()) {
+                    return "WHERE $actualFilterColumnName='${filter.second}'"
+                } else {
+                    throw Exception("Unsupported filter property type")
+                }
+            }
         }
 
         inline fun <reified T : Any> addEntity(

@@ -33,4 +33,8 @@ class BookDbModel() {
 
     @ColumnName("CATEGORY")
     var category: Int? = null
+
+    fun withRenterId(value: Int?): BookDbModel {
+        return BookDbModel(title, isbn, authors, value, category)
+    }
 }
