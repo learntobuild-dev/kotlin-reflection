@@ -71,16 +71,16 @@ fun Application.configureRouting() {
                 } else {
                     val connection = Database.getConnection()
                     DatabaseContext.ensureCreated(connection)
-                    connection.use {
-                        it.createStatement().use { stmt ->
-                            if (operation == "rent") {
-                                val sql = "UPDATE BOOK SET RENTER_ID=${userId} WHERE ID=${bookId}"
-                                stmt.execute(sql)
-                            } else if (operation == "return") {
-                                val sql = "UPDATE BOOK SET RENTER_ID=null WHERE ID=$bookId"
-                                stmt.execute(sql)
-                            } else {
-                            }
+                    DatabaseContext.updateEntities<BookDbModel>(
+                        connection,
+                        Pair(BookDbModel::id, bookId),
+                    ) {
+                        if (operation == "rent") {
+                            it.withRenterId(userId)
+                        } else if (operation == "return") {
+                            it.withRenterId(null)
+                        } else {
+                            throw Exception("Invalid operation $operation")
                         }
                     }
                 }
