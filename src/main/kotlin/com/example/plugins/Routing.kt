@@ -5,6 +5,7 @@ import com.example.datamodel.CategoryDbModel
 import com.example.datamodel.DatabaseContext
 import com.example.datamodel.UserDbModel
 import com.example.services.Database
+import com.example.services.Mapper
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -16,8 +17,8 @@ import kotlinx.serialization.Serializable
 data class Book(
     val title: String,
     val isbn: String,
-    val authors: Array<String>,
-    val category: Int
+    val authors: String,
+    val category: Int?
 )
 
 @Serializable
@@ -33,16 +34,7 @@ fun Application.configureRouting() {
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
                 val books = DatabaseContext.getEntities<BookDbModel>(connection, null)
-                call.respond(
-                    books.map {
-                        Book(
-                            it.title,
-                            it.isbn,
-                            it.authors.split(",").toTypedArray(),
-                            it.category ?: -1
-                        )
-                    }.toTypedArray()
-                )
+                call.respond(books.map { Mapper.map<BookDbModel, Book>(it) }.toTypedArray())
             }
             get("/{id}") {
                 val id = call.parameters["id"]?.toIntOrNull()
@@ -52,16 +44,7 @@ fun Application.configureRouting() {
                     val connection = Database.getConnection()
                     DatabaseContext.ensureCreated(connection)
                     val books = DatabaseContext.getEntities<BookDbModel>(connection, Pair(BookDbModel::id, id))
-                    call.respond(
-                        books.map {
-                            Book(
-                                it.title,
-                                it.isbn,
-                                it.authors.split(",").toTypedArray(),
-                                it.category ?: -1
-                            )
-                        }.toTypedArray()
-                    )
+                    call.respond(books.map {Mapper.map<BookDbModel, Book>(it) }.toTypedArray())
                 }
             }
             put("/{id}") {
@@ -96,7 +79,7 @@ fun Application.configureRouting() {
                     BookDbModel(
                         book.title,
                         book.isbn,
-                        book.authors.joinToString(","),
+                        book.authors,
                         null,
                         book.category
                     )
@@ -108,7 +91,7 @@ fun Application.configureRouting() {
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
                 val users = DatabaseContext.getEntities<UserDbModel>(connection, null)
-                call.respond(users.map { User(it.name) }.toTypedArray())
+                call.respond(users.map { Mapper.map<UserDbModel, User>(it) }.toTypedArray())
             }
             get("/{id}") {
                 val id = call.parameters["id"]?.toIntOrNull()
@@ -118,7 +101,7 @@ fun Application.configureRouting() {
                     val connection = Database.getConnection()
                     DatabaseContext.ensureCreated(connection)
                     val users = DatabaseContext.getEntities<UserDbModel>(connection, Pair(UserDbModel::id, id))
-                    call.respond(users.map { User(it.name) }.toTypedArray())
+                    call.respond(users.map { Mapper.map<UserDbModel, User>(it) }.toTypedArray())
                 }
             }
             post {
@@ -133,7 +116,7 @@ fun Application.configureRouting() {
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
                 val categories = DatabaseContext.getEntities<CategoryDbModel>(connection, null)
-                call.respond(categories.map { Category(it.name) }.toTypedArray())
+                call.respond(categories.map { Mapper.map<CategoryDbModel, Category>(it) }.toTypedArray())
             }
             get("/{id}") {
                 val id = call.parameters["id"]?.toIntOrNull()
@@ -143,7 +126,7 @@ fun Application.configureRouting() {
                     val connection = Database.getConnection()
                     DatabaseContext.ensureCreated(connection)
                     val categories = DatabaseContext.getEntities<CategoryDbModel>(connection, Pair(CategoryDbModel::id, id))
-                    call.respond(categories.map { Category(it.name) }.toTypedArray())
+                    call.respond(categories.map { Mapper.map<CategoryDbModel, Category>(it) }.toTypedArray())
                 }
             }
             post {
