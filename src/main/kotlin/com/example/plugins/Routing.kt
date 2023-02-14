@@ -74,16 +74,7 @@ fun Application.configureRouting() {
                 val book = call.receive<Book>()
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
-                DatabaseContext.addEntity(
-                    connection,
-                    BookDbModel(
-                        book.title,
-                        book.isbn,
-                        book.authors,
-                        null,
-                        book.category
-                    )
-                )
+                DatabaseContext.addEntity(connection, Mapper.map<Book, BookDbModel>(book))
             }
         }
         route("/user") {
@@ -105,10 +96,12 @@ fun Application.configureRouting() {
                 }
             }
             post {
-                val name = call.receiveText()
+                val user = call.receive<User>()
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
-                DatabaseContext.addEntity(connection, UserDbModel(name))
+                DatabaseContext.addEntity(
+                    connection,
+                    Mapper.map<User, UserDbModel>(user))
             }
         }
         route("/category") {
@@ -130,10 +123,12 @@ fun Application.configureRouting() {
                 }
             }
             post {
-                val name = call.receiveText()
+                val category = call.receive<Category>()
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
-                DatabaseContext.addEntity(connection, CategoryDbModel(name))
+                DatabaseContext.addEntity(
+                    connection,
+                    Mapper.map<Category, CategoryDbModel>(category))
             }
         }
     }

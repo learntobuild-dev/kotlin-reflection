@@ -1,6 +1,7 @@
 package com.example.services
 
 import kotlin.reflect.*
+import kotlin.reflect.full.declaredMemberProperties
 
 class Mapper {
     companion object {
@@ -10,7 +11,10 @@ class Mapper {
             return map(source, sourceType, destinationType) as TDestination
         }
 
-        fun map(source: Any?, sourceType: KClass<*>, destinationType: KClass<*>) : Any {
+        fun map(
+            source: Any?,
+            sourceType: KClass<*>,
+            destinationType: KClass<*>) : Any {
             val descriptors: MutableList<ArgumentDescriptor> = mutableListOf()
             for (member in sourceType.members) {
                 if (member is KProperty0<*> ||
@@ -22,29 +26,55 @@ class Mapper {
                 }
             }
             val ctors = findConstructor(destinationType, descriptors);
-            if (ctors.isEmpty()) {
-                throw Exception("No compatible constructor found")
+            if (ctors.isNotEmpty()) {
+                val sorted =
+                    ctors
+                        .filter { it.parameters.isNotEmpty() }
+                        .sortedByDescending { it.parameters.size }
+                for (ctor in sorted) {
+                    val arguments: MutableList<Any?> = mutableListOf();
+                    for (parameter in ctor.parameters) {
+                        val descriptor =
+                            descriptors.firstOrNull { d -> d.name == parameter.name }
+                                ?: continue
+                        if (parameter.type == descriptor.type) {
+                            arguments.add(descriptor.value)
+                        } else {
+                            val argumentClass = descriptor.type.classifier as KClass<*>
+                            val parameterClass = parameter.type.classifier as KClass<*>
+                            val argument = map(descriptor.value, argumentClass, parameterClass)
+                            arguments.add(argument)
+                        }
+                    }
+                    var argumentsArray = arguments.toTypedArray()
+                    return ctor.call(*argumentsArray)
+                }
             }
-            val sorted = ctors.sortedByDescending { it.parameters.size }
-            for (ctor in sorted) {
-                val arguments: MutableList<Any?> = mutableListOf();
-                for (parameter in ctor.parameters) {
-                    val descriptor =
-                        descriptors.firstOrNull { d -> d.name == parameter.name }
-                            ?: continue
-                    if (parameter.type == descriptor.type) {
-                        arguments.add(descriptor.value)
-                    } else {
-                        val argumentClass = descriptor.type.classifier as KClass<*>
-                        val parameterClass = parameter.type.classifier as KClass<*>
-                        val argument = map(descriptor.value, argumentClass, parameterClass)
-                        arguments.add(argument)
+            val parameterlessCtor =
+                ctors.firstOrNull { it.parameters.isEmpty() }
+                    ?: throw Exception("Could not find a parameterless constructor")
+            val newInstance = parameterlessCtor.call()
+            for (argument in descriptors) {
+                var valueSet = false
+                for (property in destinationType.declaredMemberProperties) {
+                    if (property.name == argument.name) {
+                        if (property is KMutableProperty<*>) {
+                            property.setter.call(newInstance, argument.value)
+                            valueSet = true
+                        }
+                        if (property is KMutableProperty0<*>) {
+                            property.setter.call(newInstance, argument.value)
+                            valueSet = true
+                        }
                     }
                 }
-                var argumentsArray = arguments.toTypedArray()
-                return ctor.call(*argumentsArray)
+                if (!valueSet) {
+                    throw Exception(
+                        "Argument " + argument.name +
+                                " does not have a matching property in destination type")
+                }
             }
-            throw Exception("Should not get here")
+            return newInstance
         }
 
         fun <T : Any> findConstructor(
