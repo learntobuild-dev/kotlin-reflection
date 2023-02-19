@@ -1,22 +1,42 @@
 package com.example.datamodel
 
 import java.sql.Connection
+import java.sql.DriverManager
 import kotlin.reflect.*
 import kotlin.reflect.full.*
 
-class DatabaseContext(
-    val Book: BookDbModel,
-    val Category: CategoryDbModel,
-    val User: UserDbModel
-) {
-    companion object {
-        inline fun <reified T : Any> updateEntities(
-            connection: Connection,
-            filter: Pair<KProperty<*>, Any>,
-            crossinline update: (T) -> T) {
-            updateEntities(connection, typeOf<T>(), filter) { update(it as T) }
-        }
+class DatabaseContext {
+    val Book: BookDbModel = BookDbModel()
+    val Category: CategoryDbModel = CategoryDbModel()
+    val User: UserDbModel = UserDbModel()
 
+    val connection: Connection
+
+    constructor() {
+        Class.forName("org.sqlite.JDBC")
+        connection = DriverManager.getConnection("jdbc:sqlite:test1.db")
+        ensureCreated(connection)
+    }
+
+    inline fun <reified T : Any> updateEntities(
+        filter: Pair<KProperty<*>, Any>,
+        crossinline update: (T) -> T) {
+        updateEntities(connection, typeOf<T>(), filter) { update(it as T) }
+    }
+
+    inline fun <reified T : Any> getEntities(
+        filter: Pair<KProperty<*>, Any>?): Array<T> {
+        val entities = getEntities(connection, typeOf<T>(), filter)
+        return entities.map { it as T }.toTypedArray()
+    }
+
+    inline fun <reified T : Any> addEntity(
+        value: T) {
+        val valueType = typeOf<T>()
+        addEntity(connection, value, valueType)
+    }
+
+    companion object {
         fun updateEntities(
             connection: Connection,
             entityType: KType,
@@ -65,13 +85,6 @@ class DatabaseContext(
                     connection.createStatement().use { it.execute(statement.toString()) }
                 }
             }
-        }
-
-        inline fun <reified T : Any> getEntities(
-            connection: Connection,
-            filter: Pair<KProperty<*>, Any>?): Array<T> {
-            val entities = getEntities(connection, typeOf<T>(), filter)
-            return entities.map { it as T }.toTypedArray()
         }
 
         fun getEntities(
@@ -126,13 +139,6 @@ class DatabaseContext(
                     throw Exception("Unsupported filter property type")
                 }
             }
-        }
-
-        inline fun <reified T : Any> addEntity(
-            connection: Connection,
-            value: T) {
-            val valueType = typeOf<T>()
-            addEntity(connection, value, valueType)
         }
 
         fun addEntity(
@@ -215,6 +221,9 @@ class DatabaseContext(
             val tables = getTables(connection)
             for (property in contextClass.declaredMemberProperties) {
                 val propertyType = property.returnType
+                if (!propertyType.isSubtypeOf(typeOf<DbEntity>())) {
+                    continue
+                }
                 val propertyClass = propertyType.classifier as KClass<*>
                 val tableName =
                     propertyClass

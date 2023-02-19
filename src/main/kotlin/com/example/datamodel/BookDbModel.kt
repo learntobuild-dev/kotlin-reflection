@@ -1,7 +1,7 @@
 package com.example.datamodel
 
 @TableName("BOOK")
-class BookDbModel() {
+class BookDbModel(): DbEntity() {
     constructor(
         title: String,
         isbn: String,

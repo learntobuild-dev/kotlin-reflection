@@ -4,8 +4,8 @@ import com.example.datamodel.BookDbModel
 import com.example.datamodel.CategoryDbModel
 import com.example.datamodel.DatabaseContext
 import com.example.datamodel.UserDbModel
-import com.example.services.Database
 import com.example.services.Mapper
+import com.example.services.ServiceProvider
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -27,13 +27,17 @@ data class User(val name: String)
 @Serializable
 data class Category(val name: String)
 
+fun buildServiceProvider(): ServiceProvider {
+    val result = ServiceProvider()
+    return result
+}
+
 fun Application.configureRouting() {
     routing {
         route("/book") {
             get {
-                val connection = Database.getConnection()
-                DatabaseContext.ensureCreated(connection)
-                val books = DatabaseContext.getEntities<BookDbModel>(connection, null)
+                val context = buildServiceProvider().getService<DatabaseContext>()
+                val books = context.getEntities<BookDbModel>(null)
                 call.respond(books.map { Mapper.map<BookDbModel, Book>(it) }.toTypedArray())
             }
             get("/{id}") {
@@ -41,9 +45,8 @@ fun Application.configureRouting() {
                 if (id == null) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid id")
                 } else {
-                    val connection = Database.getConnection()
-                    DatabaseContext.ensureCreated(connection)
-                    val books = DatabaseContext.getEntities<BookDbModel>(connection, Pair(BookDbModel::id, id))
+                    val context = buildServiceProvider().getService<DatabaseContext>()
+                    val books = context.getEntities<BookDbModel>(Pair(BookDbModel::id, id))
                     call.respond(books.map {Mapper.map<BookDbModel, Book>(it) }.toTypedArray())
                 }
             }
@@ -54,12 +57,8 @@ fun Application.configureRouting() {
                 if (bookId == null || operation == null || userId == null) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid bookId or userId")
                 } else {
-                    val connection = Database.getConnection()
-                    DatabaseContext.ensureCreated(connection)
-                    DatabaseContext.updateEntities<BookDbModel>(
-                        connection,
-                        Pair(BookDbModel::id, bookId),
-                    ) {
+                    val context = buildServiceProvider().getService<DatabaseContext>()
+                    context.updateEntities<BookDbModel>(Pair(BookDbModel::id, bookId)) {
                         if (operation == "rent") {
                             it.withRenterId(userId)
                         } else if (operation == "return") {
@@ -72,16 +71,14 @@ fun Application.configureRouting() {
             }
             post {
                 val book = call.receive<Book>()
-                val connection = Database.getConnection()
-                DatabaseContext.ensureCreated(connection)
-                DatabaseContext.addEntity(connection, Mapper.map<Book, BookDbModel>(book))
+                val context = buildServiceProvider().getService<DatabaseContext>()
+                context.addEntity(Mapper.map<Book, BookDbModel>(book))
             }
         }
         route("/user") {
             get {
-                val connection = Database.getConnection()
-                DatabaseContext.ensureCreated(connection)
-                val users = DatabaseContext.getEntities<UserDbModel>(connection, null)
+                val context = buildServiceProvider().getService<DatabaseContext>()
+                val users = context.getEntities<UserDbModel>(null)
                 call.respond(users.map { Mapper.map<UserDbModel, User>(it) }.toTypedArray())
             }
             get("/{id}") {
@@ -89,26 +86,21 @@ fun Application.configureRouting() {
                 if (id == null) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid id")
                 } else {
-                    val connection = Database.getConnection()
-                    DatabaseContext.ensureCreated(connection)
-                    val users = DatabaseContext.getEntities<UserDbModel>(connection, Pair(UserDbModel::id, id))
+                    val context = buildServiceProvider().getService<DatabaseContext>()
+                    val users = context.getEntities<UserDbModel>(Pair(UserDbModel::id, id))
                     call.respond(users.map { Mapper.map<UserDbModel, User>(it) }.toTypedArray())
                 }
             }
             post {
                 val user = call.receive<User>()
-                val connection = Database.getConnection()
-                DatabaseContext.ensureCreated(connection)
-                DatabaseContext.addEntity(
-                    connection,
-                    Mapper.map<User, UserDbModel>(user))
+                val context = buildServiceProvider().getService<DatabaseContext>()
+                context.addEntity(Mapper.map<User, UserDbModel>(user))
             }
         }
         route("/category") {
             get {
-                val connection = Database.getConnection()
-                DatabaseContext.ensureCreated(connection)
-                val categories = DatabaseContext.getEntities<CategoryDbModel>(connection, null)
+                val context = buildServiceProvider().getService<DatabaseContext>()
+                val categories = context.getEntities<CategoryDbModel>(null)
                 call.respond(categories.map { Mapper.map<CategoryDbModel, Category>(it) }.toTypedArray())
             }
             get("/{id}") {
@@ -116,19 +108,15 @@ fun Application.configureRouting() {
                 if (id == null) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid id")
                 } else {
-                    val connection = Database.getConnection()
-                    DatabaseContext.ensureCreated(connection)
-                    val categories = DatabaseContext.getEntities<CategoryDbModel>(connection, Pair(CategoryDbModel::id, id))
+                    val context = buildServiceProvider().getService<DatabaseContext>()
+                    val categories = context.getEntities<CategoryDbModel>(Pair(CategoryDbModel::id, id))
                     call.respond(categories.map { Mapper.map<CategoryDbModel, Category>(it) }.toTypedArray())
                 }
             }
             post {
                 val category = call.receive<Category>()
-                val connection = Database.getConnection()
-                DatabaseContext.ensureCreated(connection)
-                DatabaseContext.addEntity(
-                    connection,
-                    Mapper.map<Category, CategoryDbModel>(category))
+                val context = buildServiceProvider().getService<DatabaseContext>()
+                context.addEntity(Mapper.map<Category, CategoryDbModel>(category))
             }
         }
     }

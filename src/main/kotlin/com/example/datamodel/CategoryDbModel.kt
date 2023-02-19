@@ -1,7 +1,7 @@
 package com.example.datamodel
 
 @TableName("CATEGORY")
-class CategoryDbModel() {
+class CategoryDbModel(): DbEntity() {
     constructor(name: String) : this() {
         this.name = name
     }
