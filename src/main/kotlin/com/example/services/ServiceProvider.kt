@@ -17,23 +17,30 @@ class ServiceProvider {
     }
 
     fun getService(targetType: KClass<*>) : Any? {
-        fun canConstruct(parameters: List<KParameter>) : List<Any?>? {
-            val result = mutableListOf<Any?>()
-            for (parameter in parameters) {
-                val argument = mappings.getOrDefault(parameter.type, null)
+        return createInstance(targetType)
+    }
+
+    private fun createInstance(targetType: KClass<*>) : Any {
+        for (ctor in targetType.constructors) {
+            val arguments = canConstruct(ctor.parameters)
+            if (arguments != null) {
+                return ctor.call(*arguments.toTypedArray())
+            }
+        }
+        throw Exception("Could find constructor with available arguments")
+    }
+
+    private fun canConstruct(parameters: List<KParameter>) : List<Any?>? {
+        val result = mutableListOf<Any?>()
+        for (parameter in parameters) {
+            val argument = mappings.getOrDefault(parameter.type, null)
+            if (argument == null) {
+                val instance = createInstance(parameter.type.classifier as KClass<*>)
+                result.add(instance)
+            } else {
                 result.add(argument)
             }
-            return result
         }
-        fun createInstance() : Any {
-            for (ctor in targetType.constructors) {
-                val arguments = canConstruct(ctor.parameters)
-                if (arguments != null) {
-                    return ctor.call(*arguments.toTypedArray())
-                }
-            }
-            throw Exception("Could find constructor with available arguments")
-        }
-        return createInstance()
+        return result
     }
 }
