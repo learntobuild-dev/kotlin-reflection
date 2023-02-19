@@ -1,7 +1,6 @@
 package com.example.datamodel
 
 import java.sql.Connection
-import java.sql.DriverManager
 import kotlin.reflect.*
 import kotlin.reflect.full.*
 
@@ -12,9 +11,8 @@ class DatabaseContext {
 
     val connection: Connection
 
-    constructor() {
-        Class.forName("org.sqlite.JDBC")
-        connection = DriverManager.getConnection("jdbc:sqlite:test1.db")
+    constructor(connection: Connection) {
+        this.connection = connection
         ensureCreated(connection)
     }
 

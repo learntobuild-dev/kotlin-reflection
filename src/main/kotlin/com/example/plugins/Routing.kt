@@ -12,6 +12,9 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
+import java.sql.Connection
+import java.sql.DriverManager
+import kotlin.reflect.typeOf
 
 @Serializable
 data class Book(
@@ -27,8 +30,14 @@ data class User(val name: String)
 @Serializable
 data class Category(val name: String)
 
+fun buildDatabaseConnection(): Connection {
+    Class.forName("org.sqlite.JDBC")
+    return DriverManager.getConnection("jdbc:sqlite:test1.db")
+}
+
 fun buildServiceProvider(): ServiceProvider {
     val result = ServiceProvider()
+    result.add(typeOf<Connection>(), buildDatabaseConnection())
     return result
 }
 
