@@ -1,11 +1,11 @@
-package com.example.plugins
+package com.globomantics.plugins
 
-import com.example.datamodel.BookDbModel
-import com.example.datamodel.CategoryDbModel
-import com.example.datamodel.DatabaseContext
-import com.example.datamodel.UserDbModel
 import com.example.services.Mapper
 import com.example.services.ServiceProvider
+import com.globomantics.datamodel.BookDbModel
+import com.globomantics.datamodel.CategoryDbModel
+import com.globomantics.datamodel.DatabaseContext
+import com.globomantics.datamodel.UserDbModel
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
