@@ -1,6 +1,9 @@
 package com.example.services
 
-import com.example.datamodel.*
+import com.example.datamodel.ColumnName
+import com.example.datamodel.DatabaseContext
+import com.example.datamodel.PrimaryKey
+import com.example.datamodel.TableName
 import java.sql.Connection
 import java.sql.DriverManager
 import kotlin.reflect.KClass
@@ -133,7 +136,7 @@ class Database {
 
         fun getConnection(): Connection {
             Class.forName("org.sqlite.JDBC")
-            return DriverManager.getConnection("jdbc:sqlite:test1.db")
+            return DriverManager.getConnection("jdbc:sqlite:BookStore.db")
         }
     }
 }
