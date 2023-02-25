@@ -1,9 +1,9 @@
-package com.example.services
+package com.globomantics.services
 
-import com.example.datamodel.ColumnName
-import com.example.datamodel.DatabaseContext
-import com.example.datamodel.PrimaryKey
-import com.example.datamodel.TableName
+import com.globomantics.datamodel.ColumnName
+import com.globomantics.datamodel.DatabaseContext
+import com.globomantics.datamodel.PrimaryKey
+import com.globomantics.datamodel.TableName
 import java.sql.Connection
 import java.sql.DriverManager
 import kotlin.reflect.KClass

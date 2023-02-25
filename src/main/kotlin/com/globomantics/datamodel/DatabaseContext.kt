@@ -1,4 +1,4 @@
-package com.example.datamodel
+package com.globomantics.datamodel
 
 class DatabaseContext(
     val Book: BookDbModel,

@@ -1,6 +1,6 @@
-package com.example
+package com.globomantics
 
-import com.example.plugins.configureRouting
+import com.globomantics.plugins.configureRouting
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
