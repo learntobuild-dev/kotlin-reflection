@@ -1,6 +1,6 @@
 package com.globomantics.services
 
-import com.example.datamodel.*
+import com.globomantics.datamodel.*
 import java.sql.Connection
 import java.sql.DriverManager
 import kotlin.reflect.KClass
