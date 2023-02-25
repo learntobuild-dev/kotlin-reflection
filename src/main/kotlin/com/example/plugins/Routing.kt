@@ -2,14 +2,15 @@ package com.example.plugins
 
 import com.example.services.Database
 import io.ktor.http.*
-import io.ktor.server.routing.*
-import io.ktor.server.response.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
+import org.example.ISBNValidator
 
 @Serializable
-data class Book(val title: String, val isbn: String, val authors: Array<String>, val category: Int)
+data class Book(val title: String, val isbn: String, val authors: String, val category: Int)
 
 fun Application.configureRouting() {
     routing {
@@ -26,7 +27,7 @@ fun Application.configureRouting() {
                             val isbn = queryResult.getString("ISBN")
                             val authors = queryResult.getString("AUTHORS")
                             val category = queryResult.getInt("CATEGORY")
-                            result.add(Book(title, isbn, authors.split(",").toTypedArray(), category))
+                            result.add(Book(title, isbn, authors, category))
                         }
                     }
                 }
@@ -48,7 +49,7 @@ fun Application.configureRouting() {
                                 val isbn = queryResult.getString("ISBN")
                                 val authors = queryResult.getString("AUTHORS")
                                 val category = queryResult.getInt("CATEGORY")
-                                result.add(Book(title, isbn, authors.split(",").toTypedArray(), category))
+                                result.add(Book(title, isbn, authors, category))
                             }
                         }
                     }
@@ -79,17 +80,21 @@ fun Application.configureRouting() {
             }
             post {
                 val book = call.receive<Book>()
-                Database.initialize()
-                Database.getConnection().use {
-                    it.createStatement().use { stmt ->
-                        val id = (Database.getBookCount() ?: 0) + 1
-                        val sql =
-                            "INSERT INTO BOOK VALUES " +
-                            "(${id}, '${book.title}', " +
-                            "'${book.isbn}', " +
-                            "'${book.authors.joinToString(",")}', " +
-                            "${book.category})"
-                        stmt.execute(sql)
+                if (ISBNValidator.validate(book.isbn).result == "failed") {
+                    call.respond(HttpStatusCode.BadRequest, "Invalid ISBN")
+                } else {
+                    Database.initialize()
+                    Database.getConnection().use {
+                        it.createStatement().use { stmt ->
+                            val id = (Database.getBookCount() ?: 0) + 1
+                            val sql =
+                                "INSERT INTO BOOK VALUES " +
+                                        "(${id}, '${book.title}', " +
+                                        "'${book.isbn}', " +
+                                        "'${book.authors}', " +
+                                        "${book.category})"
+                            stmt.execute(sql)
+                        }
                     }
                 }
             }

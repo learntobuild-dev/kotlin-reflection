@@ -93,13 +93,14 @@ class Database {
                     " TITLE          TEXT   NOT NULL," +
                     " ISBN           TEXT   NOT NULL," +
                     " AUTHORS        TEXT   NOT NULL," +
+                    " RENTER_ID      TEXT   NULL," +
                     " CATEGORY       INT   NULL)"
             stmt.executeUpdate(sql)
             stmt.close()
         }
         fun getConnection(): Connection {
             Class.forName("org.sqlite.JDBC")
-            return DriverManager.getConnection("jdbc:sqlite:test.db")
+            return DriverManager.getConnection("jdbc:sqlite:BookStore.db")
         }
     }
 }
