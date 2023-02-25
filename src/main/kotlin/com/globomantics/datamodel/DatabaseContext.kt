@@ -1,4 +1,4 @@
-package com.example.datamodel
+package com.globomantics.datamodel
 
 import java.sql.Connection
 import kotlin.reflect.KClass
