@@ -1,7 +1,7 @@
-package com.example.datamodel
+package com.globomantics.datamodel
 
-@TableName("USER")
-class UserDbModel(): DbEntity() {
+@TableName("CATEGORY")
+class CategoryDbModel(): DbEntity() {
     constructor(name: String) : this() {
         this.name = name
     }
