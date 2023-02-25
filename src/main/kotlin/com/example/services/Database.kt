@@ -8,7 +8,7 @@ class Database {
 
         fun getConnection(): Connection {
             Class.forName("org.sqlite.JDBC")
-            return DriverManager.getConnection("jdbc:sqlite:test1.db")
+            return DriverManager.getConnection("jdbc:sqlite:BookStore.db")
         }
     }
 }

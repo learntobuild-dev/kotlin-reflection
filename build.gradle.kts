@@ -24,6 +24,8 @@ repositories {
 }
 
 dependencies {
+    implementation(files("Validation.jar"))
+
     implementation("org.xerial:sqlite-jdbc:3.40.0.0")
     implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
     implementation("io.ktor:ktor-server-netty-jvm:$ktor_version")

@@ -11,14 +11,14 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
+import org.example.ISBNValidator
 
 @Serializable
 data class Book(
     val title: String,
     val isbn: String,
-    val authors: Array<String>,
-    val category: Int
-)
+    val authors: String,
+    val category: Int)
 
 @Serializable
 data class User(val name: String)
@@ -38,11 +38,9 @@ fun Application.configureRouting() {
                         Book(
                             it.title,
                             it.isbn,
-                            it.authors.split(",").toTypedArray(),
-                            it.category ?: -1
-                        )
-                    }.toTypedArray()
-                )
+                            it.authors,
+                            it.category ?: -1)
+                    }.toTypedArray())
             }
             get("/{id}") {
                 val id = call.parameters["id"]?.toIntOrNull()
@@ -57,7 +55,7 @@ fun Application.configureRouting() {
                             Book(
                                 it.title,
                                 it.isbn,
-                                it.authors.split(",").toTypedArray(),
+                                it.authors,
                                 it.category ?: -1
                             )
                         }.toTypedArray()
@@ -96,7 +94,7 @@ fun Application.configureRouting() {
                     BookDbModel(
                         book.title,
                         book.isbn,
-                        book.authors.joinToString(","),
+                        book.authors,
                         null,
                         book.category
                     )
