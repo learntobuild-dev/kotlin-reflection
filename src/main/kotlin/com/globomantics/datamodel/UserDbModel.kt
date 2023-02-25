@@ -1,7 +1,7 @@
-package com.example.datamodel
+package com.globomantics.datamodel
 
-@TableName("CATEGORY")
-class CategoryDbModel() {
+@TableName("USER")
+class UserDbModel() {
     constructor(name: String) : this() {
         this.name = name
     }
