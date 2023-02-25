@@ -1,7 +1,7 @@
-package com.example.plugins
+package com.globomantics.plugins
 
-import com.example.services.Repository
-import com.example.services.ServiceProvider
+import com.globomantics.services.Repository
+import com.globomantics.services.ServiceProvider
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -11,7 +11,6 @@ import kotlinx.serialization.Serializable
 import java.sql.Connection
 import java.sql.DriverManager
 import kotlin.reflect.typeOf
-import org.example.ISBNValidator
 
 @Serializable
 data class Book(

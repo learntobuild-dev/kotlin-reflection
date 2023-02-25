@@ -1,4 +1,4 @@
-package com.example.services
+package com.globomantics.services
 
 import kotlin.reflect.KClass
 import kotlin.reflect.KParameter

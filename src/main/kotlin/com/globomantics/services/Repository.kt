@@ -1,13 +1,8 @@
-package com.example.services
+package com.globomantics.services
 
-import com.example.datamodel.BookDbModel
-import com.example.datamodel.CategoryDbModel
-import com.example.datamodel.DatabaseContext
-import com.example.datamodel.UserDbModel
-import com.example.interfaces.IRepository
-import com.example.plugins.Book
-import com.example.plugins.Category
-import com.example.plugins.User
+import com.globomantics.interfaces.IRepository
+import com.globomantics.datamodel.*
+import com.globomantics.plugins.*
 
 class Repository(val context: DatabaseContext): IRepository {
     override fun getAllBooks(): Array<Book> {
@@ -17,7 +12,7 @@ class Repository(val context: DatabaseContext): IRepository {
 
     override fun getBook(id: Int): Book {
         val books = context.getEntities<BookDbModel>(Pair(BookDbModel::id, id))
-        return books.map {Mapper.map<BookDbModel, Book>(it) }.first()
+        return books.map { Mapper.map<BookDbModel, Book>(it) }.first()
     }
 
     override fun setRenterId(bookId: Int, renterId: Int?) {

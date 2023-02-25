@@ -1,8 +1,8 @@
-package com.example.interfaces
+package com.globomantics.interfaces
 
-import com.example.plugins.Book
-import com.example.plugins.Category
-import com.example.plugins.User
+import com.globomantics.plugins.Book
+import com.globomantics.plugins.Category
+import com.globomantics.plugins.User
 
 interface IRepository {
     fun getAllBooks(): Array<Book>
