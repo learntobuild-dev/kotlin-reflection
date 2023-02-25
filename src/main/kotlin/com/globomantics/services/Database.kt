@@ -1,4 +1,4 @@
-package com.example.services
+package com.globomantics.services
 
 import java.sql.Connection
 import java.sql.DriverManager

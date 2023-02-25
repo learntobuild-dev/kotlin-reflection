@@ -1,6 +1,6 @@
-package com.example.plugins
+package com.globomantics.plugins
 
-import com.example.services.Database
+import com.globomantics.services.Database
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
