@@ -77,7 +77,6 @@ class Database {
                 }
             }
         }
-
         private fun getTables(conn: Connection): Array<String> {
             val stmt = conn.createStatement()
             val sql = "select name from sqlite_schema where type = 'table'"
@@ -116,7 +115,6 @@ class Database {
             statement.append(")")
             return statement.toString()
         }
-
         private fun toSQLTypeName(kotlinType: KType): String {
             val actualType =
                 if (kotlinType.isMarkedNullable)
