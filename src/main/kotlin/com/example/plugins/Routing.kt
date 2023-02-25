@@ -11,9 +11,10 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
+import org.example.ISBNValidator
 
 @Serializable
-data class Book(val title: String, val isbn: String, val authors: Array<String>, val category: Int)
+data class Book(val title: String, val isbn: String, val authors: String, val category: Int)
 
 fun Application.configureRouting() {
     routing {
@@ -31,7 +32,7 @@ fun Application.configureRouting() {
                             val isbn = queryResult.getString("ISBN")
                             val authors = queryResult.getString("AUTHORS")
                             val category = queryResult.getInt("CATEGORY")
-                            result.add(Book(title, isbn, authors.split(",").toTypedArray(), category))
+                            result.add(Book(title, isbn, authors, category))
                         }
                     }
                 }
@@ -54,7 +55,7 @@ fun Application.configureRouting() {
                                 val isbn = queryResult.getString("ISBN")
                                 val authors = queryResult.getString("AUTHORS")
                                 val category = queryResult.getInt("CATEGORY")
-                                result.add(Book(title, isbn, authors.split(",").toTypedArray(), category))
+                                result.add(Book(title, isbn, authors, category))
                             }
                         }
                     }
@@ -86,16 +87,20 @@ fun Application.configureRouting() {
             }
             post {
                 val book = call.receive<Book>()
-                val connection = Database.getConnection()
-                DatabaseContext.ensureCreated(connection)
-                DatabaseContext.addEntity(
-                    connection,
-                    BookDbModel(
-                        book.title,
-                        book.isbn,
-                        book.authors.joinToString(","),
-                        null,
-                        book.category))
+                if (ISBNValidator.validate(book.isbn).result == "failed") {
+                    call.respond(HttpStatusCode.BadRequest, "Invalid ISBN")
+                } else {
+                    val connection = Database.getConnection()
+                    DatabaseContext.ensureCreated(connection)
+                    DatabaseContext.addEntity(
+                        connection,
+                        BookDbModel(
+                            book.title,
+                            book.isbn,
+                            book.authors,
+                            null,
+                            book.category))
+                }
             }
         }
         route("/user") {
