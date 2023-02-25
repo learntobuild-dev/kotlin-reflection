@@ -1,4 +1,4 @@
-package com.example.services
+package com.globomantics.services
 
 import com.example.datamodel.*
 import java.sql.Connection
