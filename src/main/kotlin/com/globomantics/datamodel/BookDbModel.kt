@@ -1,4 +1,4 @@
-package com.example.datamodel
+package com.globomantics.datamodel
 
 @TableName("BOOK")
 class BookDbModel() {
