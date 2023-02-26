@@ -64,8 +64,8 @@ fun Application.configureRouting() {
                 if (bookId == null || operation == null || userId == null) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid bookId or userId")
                 } else {
-                    val context = buildServiceProvider().getService<Repository>()
-                    context.setRenterId(
+                    val repository = buildServiceProvider().getService<Repository>()
+                    repository.setRenterId(
                         bookId,
                         if (operation == "rent") {
                             userId
