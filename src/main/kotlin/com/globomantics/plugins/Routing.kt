@@ -143,7 +143,6 @@ fun Application.configureRouting() {
         }
         route("/category") {
             get {
-                val result = mutableListOf<String>()
                 val connection = Database.getConnection()
                 DatabaseContext.ensureCreated(connection)
                 val categories = DatabaseContext.getEntities<CategoryDbModel>(connection)
