@@ -1,13 +1,14 @@
 package com.globomantics.plugins
 
-import com.globomantics.services.Repository
-import com.globomantics.services.ServiceProvider
+import com.globomantics.datamodel.*
+import com.globomantics.services.*
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
+import org.example.ISBNValidator
 import java.sql.Connection
 import java.sql.DriverManager
 import kotlin.reflect.typeOf
@@ -76,8 +77,12 @@ fun Application.configureRouting() {
             }
             post {
                 val book = call.receive<Book>()
-                val repository = buildServiceProvider().getService<Repository>()
-                repository.addBook(book)
+                if (ISBNValidator.validate(book.isbn).result == "failed") {
+                    call.respond(HttpStatusCode.BadRequest, "Invalid ISBN")
+                } else {
+                    val context = buildServiceProvider().getService<DatabaseContext>()
+                    context.addEntity(Mapper.map<Book, BookDbModel>(book))
+                }
             }
         }
         route("/user") {
