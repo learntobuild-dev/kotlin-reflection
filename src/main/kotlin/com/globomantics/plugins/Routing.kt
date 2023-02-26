@@ -81,8 +81,12 @@ fun Application.configureRouting() {
             }
             post {
                 val book = call.receive<Book>()
-                val context = buildServiceProvider().getService<DatabaseContext>()
-                context.addEntity(Mapper.map<Book, BookDbModel>(book))
+                if (ISBNValidator.validate(book.isbn).result == "failed") {
+                    call.respond(HttpStatusCode.BadRequest, "Invalid ISBN")
+                } else {
+                    val context = buildServiceProvider().getService<DatabaseContext>()
+                    context.addEntity(Mapper.map<Book, BookDbModel>(book))
+                }
             }
         }
         route("/user") {
