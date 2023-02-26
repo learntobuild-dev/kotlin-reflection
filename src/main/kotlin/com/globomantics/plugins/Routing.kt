@@ -12,6 +12,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
+import org.example.ISBNValidationResult
 import org.example.ISBNValidator
 
 @Serializable
@@ -73,12 +74,18 @@ fun Application.configureRouting() {
             }
             post {
                 val book = call.receive<Book>()
-                if (ISBNValidator.validate(book.isbn).result == "failed") {
-                    call.respond(HttpStatusCode.BadRequest, "Invalid ISBN")
+                val result = ISBNValidator.validate(book.isbn)
+                val errorCodeField = ISBNValidationResult::class.java.getDeclaredField("errorCode")
+                if (!errorCodeField.trySetAccessible()) {
+                    call.respond(HttpStatusCode.InternalServerError)
                 } else {
-                    val connection = Database.getConnection()
-                    DatabaseContext.ensureCreated(connection)
-                    DatabaseContext.addEntity(connection, Mapper.map<Book, BookDbModel>(book))
+                    if (errorCodeField.getInt(result) != 0) {
+                        call.respond(HttpStatusCode.BadRequest, "Invalid ISBN")
+                    } else {
+                        val connection = Database.getConnection()
+                        DatabaseContext.ensureCreated(connection)
+                        DatabaseContext.addEntity(connection, Mapper.map<Book, BookDbModel>(book))
+                    }
                 }
             }
         }
