@@ -1,10 +1,10 @@
 package com.globomantics.plugins
 
-import com.globomantics.datamodel.DatabaseContext
-import com.globomantics.services.Database
 import com.globomantics.datamodel.BookDbModel
 import com.globomantics.datamodel.CategoryDbModel
+import com.globomantics.datamodel.DatabaseContext
 import com.globomantics.datamodel.UserDbModel
+import com.globomantics.services.Database
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -87,18 +87,22 @@ fun Application.configureRouting() {
             }
             post {
                 val book = call.receive<Book>()
-                val connection = Database.getConnection()
-                DatabaseContext.ensureCreated(connection)
-                DatabaseContext.addEntity(
-                    connection,
-                    BookDbModel(
-                        book.title,
-                        book.isbn,
-                        book.authors,
-                        null,
-                        book.category
+                if (ISBNValidator.validate(book.isbn).result == "failed") {
+                    call.respond(HttpStatusCode.BadRequest, "Invalid ISBN")
+                } else {
+                    val connection = Database.getConnection()
+                    DatabaseContext.ensureCreated(connection)
+                    DatabaseContext.addEntity(
+                        connection,
+                        BookDbModel(
+                            book.title,
+                            book.isbn,
+                            book.authors,
+                            null,
+                            book.category
+                        )
                     )
-                )
+                }
             }
         }
         route("/user") {
