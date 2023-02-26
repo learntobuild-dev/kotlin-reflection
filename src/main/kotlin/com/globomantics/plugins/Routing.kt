@@ -15,6 +15,7 @@ import kotlinx.serialization.Serializable
 import java.sql.Connection
 import java.sql.DriverManager
 import kotlin.reflect.typeOf
+import org.example.ISBNValidationResult
 import org.example.ISBNValidator
 
 @Serializable
@@ -81,11 +82,17 @@ fun Application.configureRouting() {
             }
             post {
                 val book = call.receive<Book>()
-                if (ISBNValidator.validate(book.isbn).result == "failed") {
-                    call.respond(HttpStatusCode.BadRequest, "Invalid ISBN")
+                val result = ISBNValidator.validate(book.isbn)
+                val errorCodeField = ISBNValidationResult::class.java.getDeclaredField("errorCode")
+                if (!errorCodeField.trySetAccessible()) {
+                    call.respond(HttpStatusCode.InternalServerError)
                 } else {
-                    val context = buildServiceProvider().getService<DatabaseContext>()
-                    context.addEntity(Mapper.map<Book, BookDbModel>(book))
+                    if (errorCodeField.getInt(result) != 0) {
+                        call.respond(HttpStatusCode.BadRequest, "Invalid ISBN")
+                    } else {
+                        val context = buildServiceProvider().getService<DatabaseContext>()
+                        context.addEntity(Mapper.map<Book, BookDbModel>(book))
+                    }
                 }
             }
         }
