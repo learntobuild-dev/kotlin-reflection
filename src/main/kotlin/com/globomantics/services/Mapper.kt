@@ -1,6 +1,10 @@
 package com.example.services
 
-import kotlin.reflect.*
+import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
+import kotlin.reflect.KParameter
+import kotlin.reflect.KType
+import kotlin.reflect.full.memberProperties
 
 class Mapper {
     companion object {
@@ -11,36 +15,39 @@ class Mapper {
         }
 
         fun map(source: Any?, sourceType: KClass<*>, destinationType: KClass<*>) : Any {
-            val descriptors: MutableList<Argument> = mutableListOf()
-            for (member in sourceType.members) {
-                if (member is KProperty<*>) {
-                    val propertyType = member.returnType
-                    val propertyValue = member.call(source)
-                    descriptors.add(Argument(member.name, propertyType, propertyValue))
-                }
+            val arguments: MutableList<Argument> = mutableListOf()
+            for (member in sourceType.memberProperties) {
+                val propertyType = member.returnType
+                val propertyValue = member.call(source)
+                arguments.add(Argument(member.name, propertyType, propertyValue))
             }
-            val ctors = findConstructor(destinationType, descriptors);
+            val ctors = findConstructor(destinationType, arguments);
             if (ctors.isEmpty()) {
                 throw Exception("No compatible constructor found")
             }
             val sorted = ctors.sortedByDescending { it.parameters.size }
             for (ctor in sorted) {
-                val arguments: MutableList<Any?> = mutableListOf();
+                val finalArguments: MutableList<Any?> = mutableListOf()
+                var hasAllArguments = true
                 for (parameter in ctor.parameters) {
-                    val descriptor =
-                        descriptors.firstOrNull { d -> d.name == parameter.name }
-                            ?: continue
-                    if (parameter.type == descriptor.type) {
-                        arguments.add(descriptor.value)
+                    val argument = arguments.firstOrNull { d -> d.name == parameter.name }
+                    if (argument == null) {
+                        hasAllArguments = false
+                        break
+                    }
+                    if (parameter.type == argument.type) {
+                        finalArguments.add(argument.value)
                     } else {
-                        val argumentClass = descriptor.type.classifier as KClass<*>
+                        val argumentClass = argument.type.classifier as KClass<*>
                         val parameterClass = parameter.type.classifier as KClass<*>
-                        val argument = map(descriptor.value, argumentClass, parameterClass)
-                        arguments.add(argument)
+                        val argument = map(argument.value, argumentClass, parameterClass)
+                        finalArguments.add(argument)
                     }
                 }
-                var argumentsArray = arguments.toTypedArray()
-                return ctor.call(*argumentsArray)
+                if (hasAllArguments) {
+                    var argumentsArray = arguments.toTypedArray()
+                    return ctor.call(*argumentsArray)
+                }
             }
             throw Exception("Should not get here")
         }
