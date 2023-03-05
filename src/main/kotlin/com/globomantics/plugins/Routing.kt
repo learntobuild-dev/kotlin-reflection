@@ -46,7 +46,7 @@ fun Application.configureRouting() {
                     val connection = Database.getConnection()
                     DatabaseContext.ensureCreated(connection)
                     val books = DatabaseContext.getEntities<BookDbModel>(connection, Pair(BookDbModel::id, id))
-                    call.respond(books.map {Mapper.map<BookDbModel, Book>(it) }.toTypedArray())
+                    call.respond(books.map { Mapper.map<BookDbModel, Book>(it) }.toTypedArray())
                 }
             }
             put("/{id}") {
@@ -135,7 +135,8 @@ fun Application.configureRouting() {
                 } else {
                     val connection = Database.getConnection()
                     DatabaseContext.ensureCreated(connection)
-                    val categories = DatabaseContext.getEntities<CategoryDbModel>(connection, Pair(CategoryDbModel::id, id))
+                    val categories =
+                        DatabaseContext.getEntities<CategoryDbModel>(connection, Pair(CategoryDbModel::id, id))
                     call.respond(categories.map { Mapper.map<CategoryDbModel, Category>(it) }.toTypedArray())
                 }
             }
