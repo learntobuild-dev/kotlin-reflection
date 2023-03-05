@@ -11,14 +11,12 @@ class Mapper {
         }
 
         fun map(source: Any?, sourceType: KClass<*>, destinationType: KClass<*>) : Any {
-            val descriptors: MutableList<ArgumentDescriptor> = mutableListOf()
+            val descriptors: MutableList<Argument> = mutableListOf()
             for (member in sourceType.members) {
-                if (member is KProperty0<*> ||
-                    member is KProperty1<*, *> ||
-                    member is KProperty2<*, *, *>) {
+                if (member is KProperty<*>) {
                     val propertyType = member.returnType
                     val propertyValue = member.call(source)
-                    descriptors.add(ArgumentDescriptor(member.name, propertyType, propertyValue))
+                    descriptors.add(Argument(member.name, propertyType, propertyValue))
                 }
             }
             val ctors = findConstructor(destinationType, descriptors);
@@ -49,7 +47,7 @@ class Mapper {
 
         fun <T : Any> findConstructor(
             typeClass: KClass<T>,
-            arguments: List<ArgumentDescriptor>): Array<KFunction<T>> {
+            arguments: List<Argument>): Array<KFunction<T>> {
             val result = mutableListOf<KFunction<T>>()
             for (constructor in typeClass.constructors) {
                 if (compatible(constructor.parameters, arguments)) {
@@ -61,7 +59,7 @@ class Mapper {
 
         private fun compatible(
             parameters: List<KParameter>,
-            arguments: List<ArgumentDescriptor>): Boolean {
+            arguments: List<Argument>): Boolean {
             for (parameter in parameters) {
                 var hasMatchingArgument: Boolean = false
                 for (argument in arguments) {
@@ -78,7 +76,7 @@ class Mapper {
         }
     }
 
-    class ArgumentDescriptor(
+    class Argument(
         val name: String, val type: KType, val value: Any?
     )
 }
